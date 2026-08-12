@@ -29,7 +29,12 @@ const initialData: SurveyData = {
 const API_BASE = '/api'
 
 const satisfactionOptions = ['非常满意', '满意', '一般', '不满意', '非常不满意']
-const supportOptions = ['现在就启动更换', '2027年1月1号两年物业期满后更换', '不更换', '现在无所谓']
+const supportOptions = [
+  '现在启动更换',
+  '物业服务满两年后更换（2027.12.31）',
+  '物业合同期满后更换（2028.9.30）',
+  '不同意更换',
+]
 const committeeOptions = ['希望尽快成立', '无所谓', '不关心']
 const issueOptions = [
   '卫生清洁不到位',
@@ -39,6 +44,7 @@ const issueOptions = [
   '服务态度差',
   '停车管理混乱',
   '绿化养护不足',
+  '人员配备不足',
   '其他',
 ]
 const improvementOptions = [

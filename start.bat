@@ -9,12 +9,11 @@ REM 启动后端服务器
 echo [1/2] 正在启动数据后端服务 (端口 3002)...
 start "后端服务器" cmd /k "cd /d D:\KimiData\kimi\workspace\community-app\server && node index.cjs"
 
-timeout /t 2 >nul
+ping 127.0.0.1 -n 3 >nul
 
 REM 启动前端开发服务器
 echo [2/2] 正在启动前端预览服务 (端口 7100)...
 start "前端服务器" cmd /k "cd /d D:\KimiData\kimi\workspace\community-app && npm run dev -- --port 7100"
-
 echo.
 echo ==========================================
 echo  服务已启动！

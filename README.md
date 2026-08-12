@@ -149,9 +149,13 @@ npx vercel --prod
 ### 数据存储
 
 - **本地开发**：`server/data/surveys.json`（JSON 文件持久化）
-- **Vercel 云端**：内存存储（`_data.js` 中的变量）
-  - ⚠️ 冷启动/重新部署后数据会丢失
-  - 💡 测试阶段建议随时访问 `/api/export-csv` 备份数据
+- **Vercel 云端**：优先使用 **Vercel Redis** 持久化
+  - 在 Vercel Dashboard → Storage 中创建 **Redis** 数据库并连接到项目
+  - 连接后环境变量 `REDIS_URL` 会自动注入，例如：
+    `redis://default:xxx@xxx.db.redis.io:18582`
+  - 代码已安装 `redis` 依赖，通过原生 Redis 协议连接
+  - 未配置 Redis 时，自动回退到内存数组（冷启动/重新部署后数据会丢失）
+- 💡 建议定期访问 `/api/export-csv` 导出备份
 
 ---
 

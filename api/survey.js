@@ -1,6 +1,6 @@
 const { householdWhitelist, isHouseholdSubmitted, saveSurvey } = require('./_data');
 
-module.exports = (req, res) => {
+module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -20,7 +20,7 @@ module.exports = (req, res) => {
 
   let body = '';
   req.on('data', (chunk) => (body += chunk));
-  req.on('end', () => {
+  req.on('end', async () => {
     try {
       const data = JSON.parse(body);
 
@@ -37,14 +37,14 @@ module.exports = (req, res) => {
         res.end(JSON.stringify({ success: false, message: '户号不在白名单中，请确认输入正确' }));
         return;
       }
-      if (isHouseholdSubmitted(household)) {
+      if (await isHouseholdSubmitted(household)) {
         res.statusCode = 409;
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({ success: false, message: '该户号已提交过问卷，请勿重复投票' }));
         return;
       }
 
-      const record = saveSurvey(data);
+      const record = await saveSurvey(data);
       res.statusCode = 201;
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify({ success: true, id: record.id, message: '问卷提交成功' }));

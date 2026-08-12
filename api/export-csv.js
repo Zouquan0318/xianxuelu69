@@ -1,6 +1,6 @@
-const { exportToCSV } = require('./_data');
+const { loadSurveys, exportToCSV } = require('./_data');
 
-module.exports = (req, res) => {
+module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -18,7 +18,9 @@ module.exports = (req, res) => {
     return;
   }
 
-  const csv = exportToCSV();
+  const surveys = await loadSurveys();
+  const csv = exportToCSV(surveys);
+
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="survey_export.csv"');
