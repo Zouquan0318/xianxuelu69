@@ -4,6 +4,7 @@ import Home from './pages/Home'
 import Survey from './pages/Survey'
 import Toolbox from './pages/Toolbox'
 import TabBar from './components/TabBar'
+import AnnouncementModal from './components/AnnouncementModal'
 
 export default function App() {
   const { pathname } = useLocation()
@@ -14,6 +15,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
+      <AnnouncementModal />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/survey" element={<Survey />} />
