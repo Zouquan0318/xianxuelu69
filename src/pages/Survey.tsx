@@ -34,6 +34,7 @@ const supportOptions = [
   '物业服务满两年后更换（2027.12.31）',
   '物业合同期满后更换（2028.9.30）',
   '不同意更换',
+  '无所谓，随大流',
 ]
 const committeeOptions = ['希望尽快成立', '无所谓', '不关心']
 const issueOptions = [
