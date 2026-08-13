@@ -162,8 +162,8 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // GET /api/buildings - 从白名单反推楼栋楼层结构（供看板使用）
-  if (req.method === 'GET' && url.pathname === '/api/buildings') {
+  // GET /api/households?format=buildings - 从白名单反推楼栋楼层结构（供看板使用）
+  if (req.method === 'GET' && url.pathname === '/api/households' && url.searchParams.get('format') === 'buildings') {
     const buildings = {};
     for (const id of householdWhitelist) {
       const parts = id.split('-');
@@ -189,6 +189,17 @@ const server = http.createServer((req, res) => {
       }));
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ success: true, buildings: result }));
+    return;
+  }
+
+  // GET /api/households - 获取户号白名单
+  if (req.method === 'GET' && url.pathname === '/api/households') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      success: true,
+      total: householdWhitelist.length,
+      households: householdWhitelist,
+    }));
     return;
   }
 

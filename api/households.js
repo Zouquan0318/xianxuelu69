@@ -1,19 +1,40 @@
 const householdWhitelist = require('./household-data');
 
-let surveys = [];
-
-function isHouseholdSubmitted(householdId) {
-  return surveys.some((s) => s.household === householdId);
+// 从 "14-26-0101" 解析出楼栋、楼层、单元
+function parseHousehold(id) {
+  const parts = id.split('-');
+  if (parts.length !== 3) return null;
+  return {
+    building: parts[1].replace(/^0+/, '') || '0',
+    floor: parts[2].slice(0, 2),
+    unit: parts[2].slice(2),
+  };
 }
 
-function saveSurvey(survey) {
-  const record = {
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
-    submittedAt: new Date().toISOString(),
-    ...survey,
-  };
-  surveys.push(record);
-  return record;
+// 反推楼栋楼层结构
+function buildStructure() {
+  const buildings = {};
+  for (const id of householdWhitelist) {
+    const p = parseHousehold(id);
+    if (!p) continue;
+    if (!buildings[p.building]) buildings[p.building] = { floors: {}, units: new Set(), total: 0 };
+    const b = buildings[p.building];
+    b.units.add(p.unit);
+    b.total += 1;
+    if (!b.floors[p.floor]) b.floors[p.floor] = new Set();
+    b.floors[p.floor].add(p.unit);
+  }
+
+  return Object.entries(buildings)
+    .sort(([a], [b]) => Number(a) - Number(b))
+    .map(([num, data]) => ({
+      building: num,
+      total: data.total,
+      units: [...data.units].sort(),
+      floors: Object.entries(data.floors)
+        .sort(([a], [b]) => Number(b) - Number(a))
+        .map(([floor, units]) => ({ floor, units: [...units].sort() })),
+    }));
 }
 
 module.exports = (req, res) => {
@@ -27,6 +48,18 @@ module.exports = (req, res) => {
     return;
   }
 
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = url.pathname;
+
+  // GET /api/households/buildings — 返回楼栋楼层结构（供看板使用）
+  if (pathname === '/api/households/buildings' || url.searchParams.get('format') === 'buildings') {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ success: true, buildings: buildStructure() }));
+    return;
+  }
+
+  // GET /api/households — 返回户号白名单
   res.statusCode = 200;
   res.setHeader('Content-Type', 'application/json');
   res.end(JSON.stringify({

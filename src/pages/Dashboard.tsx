@@ -66,7 +66,7 @@ function useDashboardData() {
     try {
       const [sRes, bRes] = await Promise.all([
         fetch(`${API_BASE}/surveys`),
-        fetch(`${API_BASE}/buildings`),
+        fetch(`${API_BASE}/households?format=buildings`),
       ])
       if (!sRes.ok || !bRes.ok) throw new Error('接口请求失败')
       const sData: Survey[] = await sRes.json()

@@ -174,14 +174,14 @@ npx vercel --prod
 
 ### 接口列表
 
-| 方法     | 路径                | 说明                               |
-| -------- | ------------------- | ---------------------------------- |
-| `GET`  | `/api/households` | 获取户号白名单                     |
-| `GET`  | `/api/buildings`  | 楼栋楼层结构（供看板使用）         |
-| `POST` | `/api/survey`     | 提交问卷                           |
-| `GET`  | `/api/surveys`    | 获取所有问卷数据                   |
-| `GET`  | `/api/stats`      | 统计概览                           |
-| `GET`  | `/api/export-csv` | 导出 CSV（带 BOM，Excel 直接打开） |
+| 方法     | 路径                              | 说明                               |
+| -------- | --------------------------------- | ---------------------------------- |
+| `GET`  | `/api/households`               | 获取户号白名单                     |
+| `GET`  | `/api/households?format=buildings` | 楼栋楼层结构（供看板使用）         |
+| `POST` | `/api/survey`                   | 提交问卷                           |
+| `GET`  | `/api/surveys`                  | 获取所有问卷数据                   |
+| `GET`  | `/api/stats`                    | 统计概览                           |
+| `GET`  | `/api/export-csv`               | 导出 CSV（带 BOM，Excel 直接打开） |
 
 ### POST /api/survey 校验逻辑
 
