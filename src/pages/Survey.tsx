@@ -70,7 +70,8 @@ export default function Survey() {
   const [households, setHouseholds] = useState<string[]>([])
   const [loadingHouseholds, setLoadingHouseholds] = useState(true)
 
-  // 选择的单元和房号
+  // 选择状态
+  const [selectedBuilding, setSelectedBuilding] = useState('')
   const [selectedUnit, setSelectedUnit] = useState('')
   const [selectedRoom, setSelectedRoom] = useState('')
 
@@ -89,30 +90,47 @@ export default function Survey() {
       .finally(() => setLoadingHouseholds(false))
   }, [])
 
-  // 解析单元列表
-  const units = useMemo(() => {
-    const unitSet = new Set<string>()
+  // 解析楼栋列表（按数字排序）
+  const buildings = useMemo(() => {
+    const set = new Set<string>()
     households.forEach((h) => {
       const parts = h.split('-')
-      if (parts.length >= 2) {
-        unitSet.add(parts[1])
-      }
+      if (parts.length >= 1) set.add(parts[0])
     })
-    return Array.from(unitSet).sort()
+    return Array.from(set).sort((a, b) => Number(a) - Number(b))
   }, [households])
 
-  // 解析当前单元下的房号列表
+  // 解析当前楼栋下的单元列表（按数字排序）
+  const units = useMemo(() => {
+    if (!selectedBuilding) return []
+    const set = new Set<string>()
+    households.forEach((h) => {
+      const parts = h.split('-')
+      if (parts.length >= 2 && parts[0] === selectedBuilding) {
+        set.add(parts[1])
+      }
+    })
+    return Array.from(set).sort((a, b) => Number(a) - Number(b))
+  }, [households, selectedBuilding])
+
+  // 解析当前单元下的房号列表（按数字排序）
   const rooms = useMemo(() => {
-    if (!selectedUnit) return []
-    const prefix = `14-${selectedUnit}-`
-    const roomList = households
+    if (!selectedBuilding || !selectedUnit) return []
+    const prefix = `${selectedBuilding}-${selectedUnit}-`
+    return households
       .filter((h) => h.startsWith(prefix))
       .map((h) => h.replace(prefix, ''))
-      .sort()
-    return roomList
-  }, [households, selectedUnit])
+      .sort((a, b) => Number(a) - Number(b))
+  }, [households, selectedBuilding, selectedUnit])
 
-  // 当单元改变时，清空房号选择
+  // 当楼栋改变时，清空单元和房号
+  useEffect(() => {
+    setSelectedUnit('')
+    setSelectedRoom('')
+    setData((prev) => ({ ...prev, household: '' }))
+  }, [selectedBuilding])
+
+  // 当单元改变时，清空房号
   useEffect(() => {
     setSelectedRoom('')
     setData((prev) => ({ ...prev, household: '' }))
@@ -120,11 +138,11 @@ export default function Survey() {
 
   // 当房号改变时，更新完整户号
   useEffect(() => {
-    if (selectedUnit && selectedRoom) {
-      const fullId = `14-${selectedUnit}-${selectedRoom}`
+    if (selectedBuilding && selectedUnit && selectedRoom) {
+      const fullId = `${selectedBuilding}-${selectedUnit}-${selectedRoom}`
       setData((prev) => ({ ...prev, household: fullId }))
     }
-  }, [selectedUnit, selectedRoom])
+  }, [selectedBuilding, selectedUnit, selectedRoom])
 
   const updateField = <K extends keyof SurveyData>(key: K, value: SurveyData[K]) => {
     setData((prev) => ({ ...prev, [key]: value }))
@@ -179,6 +197,7 @@ export default function Survey() {
   const handleReset = () => {
     if (confirm('确定要清空所有答案吗？')) {
       setData(initialData)
+      setSelectedBuilding('')
       setSelectedUnit('')
       setSelectedRoom('')
       setError('')
@@ -200,6 +219,7 @@ export default function Survey() {
           <button
             onClick={() => {
               setData(initialData)
+              setSelectedBuilding('')
               setSelectedUnit('')
               setSelectedRoom('')
               setSubmitted(false)
@@ -248,12 +268,19 @@ export default function Survey() {
             </div>
           ) : (
             <div className="space-y-3">
-              {/* 楼栋（固定） */}
+              {/* 楼栋选择 */}
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">楼栋</label>
-                <div className="px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
-                  14栋
-                </div>
+                <select
+                  value={selectedBuilding}
+                  onChange={(e) => setSelectedBuilding(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-white"
+                >
+                  <option value="">请选择楼栋</option>
+                  {buildings.map((b) => (
+                    <option key={b} value={b}>{b}栋</option>
+                  ))}
+                </select>
               </div>
 
               {/* 单元选择 */}
@@ -262,9 +289,10 @@ export default function Survey() {
                 <select
                   value={selectedUnit}
                   onChange={(e) => setSelectedUnit(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-white"
+                  disabled={!selectedBuilding}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-white disabled:bg-gray-100 disabled:text-gray-400"
                 >
-                  <option value="">请选择单元</option>
+                  <option value="">{selectedBuilding ? '请选择单元' : '请先选择楼栋'}</option>
                   {units.map((u) => (
                     <option key={u} value={u}>{u}单元</option>
                   ))}

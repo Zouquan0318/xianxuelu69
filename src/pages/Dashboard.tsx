@@ -3,7 +3,7 @@ import { RefreshCw } from 'lucide-react'
 
 const API_BASE = '/api'
 
-// 与原 Python 看板保持一致的状态映射
+// 状态映射
 const SC_MAP: Record<string, number> = {
   现在启动更换: 1,
   '物业服务满两年后更换（2027.12.31）': 2,
@@ -90,10 +90,28 @@ function useDashboardData() {
 
 export default function Dashboard() {
   const { surveys, buildings, loading, error, updatedAt, reload } = useDashboardData()
+  const [selectedBuilding, setSelectedBuilding] = useState<string>('all')
+
+  const buildingOptions = useMemo(() => {
+    return buildings.map((b) => b.building).sort((a, b) => Number(a) - Number(b))
+  }, [buildings])
+
+  const filteredBuildings = useMemo(() => {
+    if (selectedBuilding === 'all') return buildings
+    return buildings.filter((b) => b.building === selectedBuilding)
+  }, [buildings, selectedBuilding])
+
+  const filteredSurveys = useMemo(() => {
+    if (selectedBuilding === 'all') return surveys
+    return surveys.filter((s) => {
+      const prefix = `${selectedBuilding.padStart(2, '0')}-`
+      return s.household.startsWith(prefix)
+    })
+  }, [surveys, selectedBuilding])
 
   const stats = useMemo(() => {
-    const totalHouses = buildings.reduce((sum, b) => sum + b.total, 0)
-    const totalSurveyed = surveys.length
+    const totalHouses = filteredBuildings.reduce((sum, b) => sum + b.total, 0)
+    const totalSurveyed = filteredSurveys.length
     const responseRate = totalHouses > 0 ? ((totalSurveyed / totalHouses) * 100).toFixed(1) : '0.0'
 
     const supportCount: Record<string, number> = {}
@@ -102,7 +120,7 @@ export default function Dashboard() {
     const recCount: Record<string, number> = {}
 
     const surveyMap = new Map<string, Survey>()
-    for (const s of surveys) {
+    for (const s of filteredSurveys) {
       surveyMap.set(s.household, s)
       supportCount[s.q3_support_change] = (supportCount[s.q3_support_change] || 0) + 1
       committeeCount[s.q6_committee] = (committeeCount[s.q6_committee] || 0) + 1
@@ -133,7 +151,7 @@ export default function Dashboard() {
       recsTop,
       surveyMap,
     }
-  }, [surveys, buildings])
+  }, [filteredSurveys, filteredBuildings])
 
   if (loading && !updatedAt) {
     return (
@@ -157,25 +175,41 @@ export default function Dashboard() {
     )
   }
 
+  const title = selectedBuilding === 'all'
+    ? '物业更换民意看板 · 汇总'
+    : `${selectedBuilding}栋 · 物业更换民意看板`
+
   return (
     <div className="mx-auto max-w-5xl px-4 pb-8 pt-4">
       {/* 头部 */}
-      <div className="mb-5 flex items-start justify-between">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-xl font-medium text-gray-900">14栋 · 物业更换民意看板</h1>
+          <h1 className="text-xl font-medium text-gray-900">{title}</h1>
           <p className="mt-1 text-xs text-gray-400">
             数据更新于 {updatedAt ? updatedAt.toLocaleString('zh-CN') : '-'}
             &nbsp;|&nbsp;{stats.totalSurveyed} 份有效问卷 &nbsp;|&nbsp;回收率 {stats.responseRate}%
           </p>
         </div>
-        <button
-          onClick={reload}
-          disabled={loading}
-          className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600 shadow-sm hover:bg-gray-50 disabled:opacity-50"
-        >
-          <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-          刷新
-        </button>
+        <div className="flex items-center gap-2">
+          <select
+            value={selectedBuilding}
+            onChange={(e) => setSelectedBuilding(e.target.value)}
+            className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500"
+          >
+            <option value="all">全部楼栋</option>
+            {buildingOptions.map((b) => (
+              <option key={b} value={b}>{b}栋</option>
+            ))}
+          </select>
+          <button
+            onClick={reload}
+            disabled={loading}
+            className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600 shadow-sm hover:bg-gray-50 disabled:opacity-50"
+          >
+            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+            刷新
+          </button>
+        </div>
       </div>
 
       {/* KPI 卡片 */}
@@ -184,7 +218,7 @@ export default function Dashboard() {
           <div className="text-xs text-gray-400">总户数</div>
           <div className="mt-1 text-3xl font-medium tabular-nums text-gray-900">{stats.totalHouses}</div>
           <div className="mt-1 text-xs text-gray-500">
-            {buildings.map((b) => `${b.building}号楼`).join(' · ')}
+            {filteredBuildings.map((b) => `${b.building}号楼`).join(' · ') || '-'}
           </div>
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-4">
@@ -233,7 +267,7 @@ export default function Dashboard() {
           </div>
           <div className="overflow-x-auto p-4">
             <div className="flex min-w-max gap-4">
-              {buildings.map((b) => (
+              {filteredBuildings.map((b) => (
                 <BuildingMap key={b.building} building={b} surveyMap={stats.surveyMap} />
               ))}
             </div>
@@ -355,13 +389,14 @@ function BuildingMap({
   surveyMap: Map<string, Survey>
 }) {
   const surveyedCount = building.floors.reduce((sum, f) => {
-    return (
-      sum +
-      f.units.filter((u) => {
-        const id = `14-${building.building.padStart(2, '0')}-${f.floor}${u}`
-        return surveyMap.has(id)
-      }).length
-    )
+    let count = 0
+    for (const unit of building.units) {
+      for (const suffix of f.units) {
+        const id = `${building.building.padStart(2, '0')}-${unit.padStart(2, '0')}-${f.floor.padStart(2, '0')}${suffix.padStart(2, '0')}`
+        if (surveyMap.has(id)) count += 1
+      }
+    }
+    return sum + count
   }, 0)
   const rate = building.total > 0 ? ((surveyedCount / building.total) * 100).toFixed(1) : '0.0'
 
@@ -377,34 +412,34 @@ function BuildingMap({
         <div key={f.floor} className="mb-1 flex items-center gap-1.5">
           <span className="w-5 text-right text-[10px] tabular-nums text-gray-400">{f.floor}</span>
           <div className="flex gap-1">
-            {building.units.map((u) => {
-              const exists = f.units.includes(u)
-              if (!exists) {
-                return <div key={u} className="h-[22px] w-[22px] rounded border border-gray-200 bg-gray-100" title="无此户型" />
-              }
-              const id = `14-${building.building.padStart(2, '0')}-${f.floor}${u}`
-              const s = surveyMap.get(id)
-              if (!s) {
-                return (
-                  <div
-                    key={u}
-                    className="h-[22px] w-[22px] rounded border border-dashed border-gray-300 bg-gray-100"
-                    title={`${f.floor}${u} 未参与`}
-                  />
-                )
-              }
-              const code = SC_MAP[s.q3_support_change] ?? 4
-              return (
-                <div
-                  key={u}
-                  className="flex h-[22px] w-[22px] items-center justify-center rounded text-[9px] text-white"
-                  style={{ background: SC_COLORS[code] }}
-                  title={`${f.floor}${u} ${SC_LABELS[code]}`}
-                >
-                  {u}
-                </div>
-              )
-            })}
+            {building.units.map((unit) => (
+              <div key={unit} className="flex gap-0.5">
+                {f.units.map((suffix) => {
+                  const id = `${building.building.padStart(2, '0')}-${unit.padStart(2, '0')}-${f.floor.padStart(2, '0')}${suffix.padStart(2, '0')}`
+                  const s = surveyMap.get(id)
+                  if (!s) {
+                    return (
+                      <div
+                        key={`${unit}-${suffix}`}
+                        className="h-[22px] w-[22px] rounded border border-dashed border-gray-300 bg-gray-100"
+                        title={`${unit}单元${f.floor}${suffix} 未参与`}
+                      />
+                    )
+                  }
+                  const code = SC_MAP[s.q3_support_change] ?? 4
+                  return (
+                    <div
+                      key={`${unit}-${suffix}`}
+                      className="flex h-[22px] w-[22px] items-center justify-center rounded text-[9px] text-white"
+                      style={{ background: SC_COLORS[code] }}
+                      title={`${unit}单元${f.floor}${suffix} ${SC_LABELS[code]}`}
+                    >
+                      {suffix}
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
           </div>
         </div>
       ))}

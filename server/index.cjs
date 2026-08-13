@@ -151,26 +151,15 @@ const server = http.createServer((req, res) => {
 
   const url = new URL(req.url, `http://${req.headers.host}`);
 
-  // GET /api/households - 获取户号白名单
-  if (req.method === 'GET' && url.pathname === '/api/households') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      success: true,
-      total: householdWhitelist.length,
-      households: householdWhitelist,
-    }));
-    return;
-  }
-
   // GET /api/households?format=buildings - 从白名单反推楼栋楼层结构（供看板使用）
   if (req.method === 'GET' && url.pathname === '/api/households' && url.searchParams.get('format') === 'buildings') {
     const buildings = {};
     for (const id of householdWhitelist) {
       const parts = id.split('-');
       if (parts.length !== 3) continue;
-      const bnum = parts[1].replace(/^0+/, '') || '0';
-      const floor = parts[2].slice(0, 2);
-      const unit = parts[2].slice(2);
+      const bnum = parts[0].replace(/^0+/, '') || '0';
+      const floor = parts[2].padStart(4, '0').slice(0, 2);
+      const unit = parts[1].replace(/^0+/, '') || '0';
       if (!buildings[bnum]) buildings[bnum] = { floors: {}, units: new Set(), total: 0 };
       buildings[bnum].units.add(unit);
       buildings[bnum].total += 1;
@@ -182,10 +171,10 @@ const server = http.createServer((req, res) => {
       .map(([num, data]) => ({
         building: num,
         total: data.total,
-        units: [...data.units].sort(),
+        units: [...data.units].sort((a, b) => Number(a) - Number(b)),
         floors: Object.entries(data.floors)
           .sort(([a], [b]) => Number(b) - Number(a))
-          .map(([floor, units]) => ({ floor, units: [...units].sort() })),
+          .map(([floor, units]) => ({ floor, units: [...units].sort((a, b) => Number(a) - Number(b)) })),
       }));
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ success: true, buildings: result }));

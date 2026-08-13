@@ -1,13 +1,15 @@
 const householdWhitelist = require('./household-data');
 
-// 从 "14-26-0101" 解析出楼栋、楼层、单元
+// 从 "14-26-0101" / "15-18-0101" 解析出楼栋、单元、楼层、户内位置
 function parseHousehold(id) {
   const parts = id.split('-');
   if (parts.length !== 3) return null;
+  const room = parts[2].padStart(4, '0');
   return {
-    building: parts[1].replace(/^0+/, '') || '0',
-    floor: parts[2].slice(0, 2),
-    unit: parts[2].slice(2),
+    building: parts[0].replace(/^0+/, '') || '0',
+    unit: parts[1].replace(/^0+/, '') || '0',
+    floor: room.slice(0, 2),
+    suffix: room.slice(2),
   };
 }
 
@@ -30,10 +32,10 @@ function buildStructure() {
     .map(([num, data]) => ({
       building: num,
       total: data.total,
-      units: [...data.units].sort(),
+      units: [...data.units].sort((a, b) => Number(a) - Number(b)),
       floors: Object.entries(data.floors)
         .sort(([a], [b]) => Number(b) - Number(a))
-        .map(([floor, units]) => ({ floor, units: [...units].sort() })),
+        .map(([floor, units]) => ({ floor, units: [...units].sort((a, b) => Number(a) - Number(b)) })),
     }));
 }
 
