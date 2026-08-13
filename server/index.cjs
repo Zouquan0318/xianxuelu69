@@ -160,11 +160,13 @@ const server = http.createServer((req, res) => {
       const bnum = parts[0].replace(/^0+/, '') || '0';
       const floor = parts[2].padStart(4, '0').slice(0, 2);
       const unit = parts[1].replace(/^0+/, '') || '0';
+      const suffix = parts[2].padStart(4, '0').slice(2);
       if (!buildings[bnum]) buildings[bnum] = { floors: {}, units: new Set(), total: 0 };
       buildings[bnum].units.add(unit);
       buildings[bnum].total += 1;
-      if (!buildings[bnum].floors[floor]) buildings[bnum].floors[floor] = new Set();
-      buildings[bnum].floors[floor].add(unit);
+      if (!buildings[bnum].floors[floor]) buildings[bnum].floors[floor] = {};
+      if (!buildings[bnum].floors[floor][unit]) buildings[bnum].floors[floor][unit] = new Set();
+      buildings[bnum].floors[floor][unit].add(suffix);
     }
     const result = Object.entries(buildings)
       .sort(([a], [b]) => Number(a) - Number(b))
@@ -174,7 +176,15 @@ const server = http.createServer((req, res) => {
         units: [...data.units].sort((a, b) => Number(a) - Number(b)),
         floors: Object.entries(data.floors)
           .sort(([a], [b]) => Number(b) - Number(a))
-          .map(([floor, units]) => ({ floor, units: [...units].sort((a, b) => Number(a) - Number(b)) })),
+          .map(([floor, unitMap]) => ({
+            floor,
+            unitSuffixes: Object.entries(unitMap)
+              .sort(([a], [b]) => Number(a) - Number(b))
+              .map(([u, suffixes]) => ({
+                unit: u,
+                suffixes: [...suffixes].sort((a, b) => Number(a) - Number(b)),
+              })),
+          })),
       }));
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ success: true, buildings: result }));

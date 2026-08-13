@@ -13,18 +13,25 @@ function parseHousehold(id) {
   };
 }
 
-// 反推楼栋楼层结构
+// 反推楼栋楼层结构，包含每个单元每层的房号后缀，供看板精确渲染
 function buildStructure() {
   const buildings = {};
   for (const id of householdWhitelist) {
     const p = parseHousehold(id);
     if (!p) continue;
-    if (!buildings[p.building]) buildings[p.building] = { floors: {}, units: new Set(), total: 0 };
+    if (!buildings[p.building]) {
+      buildings[p.building] = { floors: {}, units: new Set(), total: 0 };
+    }
     const b = buildings[p.building];
     b.units.add(p.unit);
     b.total += 1;
-    if (!b.floors[p.floor]) b.floors[p.floor] = new Set();
-    b.floors[p.floor].add(p.unit);
+    if (!b.floors[p.floor]) {
+      b.floors[p.floor] = {};
+    }
+    if (!b.floors[p.floor][p.unit]) {
+      b.floors[p.floor][p.unit] = new Set();
+    }
+    b.floors[p.floor][p.unit].add(p.suffix);
   }
 
   return Object.entries(buildings)
@@ -35,7 +42,15 @@ function buildStructure() {
       units: [...data.units].sort((a, b) => Number(a) - Number(b)),
       floors: Object.entries(data.floors)
         .sort(([a], [b]) => Number(b) - Number(a))
-        .map(([floor, units]) => ({ floor, units: [...units].sort((a, b) => Number(a) - Number(b)) })),
+        .map(([floor, unitMap]) => ({
+          floor,
+          unitSuffixes: Object.entries(unitMap)
+            .sort(([a], [b]) => Number(a) - Number(b))
+            .map(([unit, suffixes]) => ({
+              unit,
+              suffixes: [...suffixes].sort((a, b) => Number(a) - Number(b)),
+            })),
+        })),
     }));
 }
 

@@ -36,9 +36,14 @@ interface Survey {
   q7_suggestions: string
 }
 
+interface UnitSuffixes {
+  unit: string
+  suffixes: string[]
+}
+
 interface FloorInfo {
   floor: string
-  units: string[]
+  unitSuffixes: UnitSuffixes[]
 }
 
 interface BuildingInfo {
@@ -131,9 +136,9 @@ export default function Dashboard() {
     }
 
     const supportNow = supportCount['现在启动更换'] || 0
-    const supportNowPct = totalSurveyed > 0 ? ((supportNow / totalSurveyed) * 100).toFixed(1) : '0.0'
+    const supportNowPct = totalHouses > 0 ? ((supportNow / totalHouses) * 100).toFixed(1) : '0.0'
     const committeeWant = committeeCount['希望尽快成立'] || 0
-    const committeePct = totalSurveyed > 0 ? ((committeeWant / totalSurveyed) * 100).toFixed(1) : '0.0'
+    const committeePct = totalHouses > 0 ? ((committeeWant / totalHouses) * 100).toFixed(1) : '0.0'
 
     const issuesTop = Object.entries(issueCount).sort((a, b) => b[1] - a[1]).slice(0, 5)
     const recsTop = Object.entries(recCount).sort((a, b) => b[1] - a[1]).slice(0, 8)
@@ -390,9 +395,9 @@ function BuildingMap({
 }) {
   const surveyedCount = building.floors.reduce((sum, f) => {
     let count = 0
-    for (const unit of building.units) {
-      for (const suffix of f.units) {
-        const id = `${building.building.padStart(2, '0')}-${unit.padStart(2, '0')}-${f.floor.padStart(2, '0')}${suffix.padStart(2, '0')}`
+    for (const us of f.unitSuffixes) {
+      for (const suffix of us.suffixes) {
+        const id = `${building.building.padStart(2, '0')}-${us.unit.padStart(2, '0')}-${f.floor.padStart(2, '0')}${suffix.padStart(2, '0')}`
         if (surveyMap.has(id)) count += 1
       }
     }
@@ -412,27 +417,27 @@ function BuildingMap({
         <div key={f.floor} className="mb-1 flex items-center gap-1.5">
           <span className="w-5 text-right text-[10px] tabular-nums text-gray-400">{f.floor}</span>
           <div className="flex gap-1">
-            {building.units.map((unit) => (
-              <div key={unit} className="flex gap-0.5">
-                {f.units.map((suffix) => {
-                  const id = `${building.building.padStart(2, '0')}-${unit.padStart(2, '0')}-${f.floor.padStart(2, '0')}${suffix.padStart(2, '0')}`
+            {f.unitSuffixes.map((us) => (
+              <div key={us.unit} className="flex gap-0.5">
+                {us.suffixes.map((suffix) => {
+                  const id = `${building.building.padStart(2, '0')}-${us.unit.padStart(2, '0')}-${f.floor.padStart(2, '0')}${suffix.padStart(2, '0')}`
                   const s = surveyMap.get(id)
                   if (!s) {
                     return (
                       <div
-                        key={`${unit}-${suffix}`}
+                        key={suffix}
                         className="h-[22px] w-[22px] rounded border border-dashed border-gray-300 bg-gray-100"
-                        title={`${unit}单元${f.floor}${suffix} 未参与`}
+                        title={`${us.unit}单元${f.floor}${suffix} 未参与`}
                       />
                     )
                   }
                   const code = SC_MAP[s.q3_support_change] ?? 4
                   return (
                     <div
-                      key={`${unit}-${suffix}`}
+                      key={suffix}
                       className="flex h-[22px] w-[22px] items-center justify-center rounded text-[9px] text-white"
                       style={{ background: SC_COLORS[code] }}
-                      title={`${unit}单元${f.floor}${suffix} ${SC_LABELS[code]}`}
+                      title={`${us.unit}单元${f.floor}${suffix} ${SC_LABELS[code]}`}
                     >
                       {suffix}
                     </div>
