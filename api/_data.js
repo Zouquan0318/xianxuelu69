@@ -122,7 +122,7 @@ function exportToCSV(surveys) {
     'ID', '提交时间', '户号',
     'Q1_整体满意度', 'Q2_存在问题', 'Q3_更换看法',
     'Q4_希望改善', 'Q5_有推荐公司', 'Q5_公司名称',
-    'Q6_业委会看法', 'Q7_其他建议',
+    'Q6_业委会看法', 'Q7_参与意愿', 'Q8_其他建议',
   ];
 
   const rows = surveys.map((s) => [
@@ -134,7 +134,8 @@ function exportToCSV(surveys) {
     s.q5_has_recommendation || '',
     s.q5_company_name || '',
     s.q6_committee || '',
-    (s.q7_suggestions || '').replace(/\n/g, ' '),
+    s.q7_participate || '',
+    (s.q8_suggestions || s.q7_suggestions || '').replace(/\n/g, ' '),
   ]);
 
   return [headers.join(','), ...rows.map((r) =>

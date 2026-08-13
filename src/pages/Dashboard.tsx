@@ -3,6 +3,17 @@ import { RefreshCw } from 'lucide-react'
 
 const API_BASE = '/api'
 
+// Q6 旧值 → 新值映射（兼容历史数据）
+const Q6_VALUE_MAP: Record<string, string> = {
+  希望尽快成立: '赞同成立业委会',
+  不关心: '不赞同成立业委会',
+  无所谓: '无所谓',
+}
+
+function normalizeQ6(value: string): string {
+  return Q6_VALUE_MAP[value] || value
+}
+
 // 状态映射
 const SC_MAP: Record<string, number> = {
   现在启动更换: 1,
@@ -33,7 +44,8 @@ interface Survey {
   q5_has_recommendation: string
   q5_company_name: string
   q6_committee: string
-  q7_suggestions: string
+  q7_participate: string
+  q8_suggestions: string
 }
 
 interface UnitSuffixes {
@@ -76,7 +88,12 @@ function useDashboardData() {
       if (!sRes.ok || !bRes.ok) throw new Error('接口请求失败')
       const sData: Survey[] = await sRes.json()
       const bData: BuildingsResponse = await bRes.json()
-      setSurveys(sData)
+      // 兼容历史数据：将 Q6 旧值映射为新选项
+      const normalized = sData.map((s) => ({
+        ...s,
+        q6_committee: normalizeQ6(s.q6_committee),
+      }))
+      setSurveys(normalized)
       setBuildings(bData.buildings || [])
       setUpdatedAt(new Date())
     } catch (e) {
@@ -137,7 +154,7 @@ export default function Dashboard() {
 
     const supportNow = supportCount['现在启动更换'] || 0
     const supportNowPct = totalHouses > 0 ? ((supportNow / totalHouses) * 100).toFixed(1) : '0.0'
-    const committeeWant = committeeCount['希望尽快成立'] || 0
+    const committeeWant = committeeCount['赞同成立业委会'] || 0
     const committeePct = totalHouses > 0 ? ((committeeWant / totalHouses) * 100).toFixed(1) : '0.0'
 
     const issuesTop = Object.entries(issueCount).sort((a, b) => b[1] - a[1]).slice(0, 5)
@@ -240,7 +257,7 @@ export default function Dashboard() {
           <div className="mt-1 text-xs text-gray-500">占比 {stats.supportNowPct}%</div>
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-4">
-          <div className="text-xs text-gray-400">希望尽快成立业委会</div>
+          <div className="text-xs text-gray-400">赞同成立业委会</div>
           <div className="mt-1 text-3xl font-medium tabular-nums text-green-600">
             {stats.committeeWant}
             <span className="ml-1 text-base">户</span>

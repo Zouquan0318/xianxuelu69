@@ -2,10 +2,11 @@
   "household": "14-26-0101",
   "q1_satisfaction": "不满意",
   "q2_issues": ["卫生清洁不到位", "收费不透明"],
-  "q3_support_change": "2027年1月1号两年物业期满后更换",
+  "q3_support_change": "物业服务满两年后更换（2027.12.31）",
   "q4_improvements": ["公开收费标准", "降低物业费用"],
   "q5_has_recommendation": "否",
   "q5_company_name": "",
-  "q6_committee": "希望尽快成立",
-  "q7_suggestions": "希望物业能改善停车管理"
+  "q6_committee": "赞同成立业委会",
+  "q7_participate": "我愿意",
+  "q8_suggestions": "希望物业能改善停车管理"
 }

@@ -235,7 +235,8 @@ interface SurveyData {
   q5_has_recommendation: string  // 是否有推荐公司
   q5_company_name: string     // 推荐公司名称
   q6_committee: string        // 业委会看法
-  q7_suggestions: string      // 其他建议
+  q7_participate: string      // 参与意愿
+  q8_suggestions: string      // 其他建议
 }
 ```
 

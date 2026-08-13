@@ -86,7 +86,8 @@ function exportToCSV() {
     'Q5_有推荐公司',
     'Q5_公司名称',
     'Q6_业委会看法',
-    'Q7_其他建议',
+    'Q7_参与意愿',
+    'Q8_其他建议',
   ];
 
   const rows = surveys.map((s) => [
@@ -100,7 +101,8 @@ function exportToCSV() {
     s.q5_has_recommendation || '',
     s.q5_company_name || '',
     s.q6_committee || '',
-    (s.q7_suggestions || '').replace(/\n/g, ' '),
+    s.q7_participate || '',
+    (s.q8_suggestions || s.q7_suggestions || '').replace(/\n/g, ' '),
   ]);
 
   return [headers.join(','), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n');

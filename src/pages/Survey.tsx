@@ -11,7 +11,8 @@ interface SurveyData {
   q5_has_recommendation: string
   q5_company_name: string
   q6_committee: string
-  q7_suggestions: string
+  q7_participate: string
+  q8_suggestions: string
 }
 
 const initialData: SurveyData = {
@@ -23,7 +24,8 @@ const initialData: SurveyData = {
   q5_has_recommendation: '',
   q5_company_name: '',
   q6_committee: '',
-  q7_suggestions: '',
+  q7_participate: '',
+  q8_suggestions: '',
 }
 
 const API_BASE = '/api'
@@ -36,7 +38,8 @@ const supportOptions = [
   '不同意更换',
   '无所谓，随大流',
 ]
-const committeeOptions = ['希望尽快成立', '无所谓', '不关心']
+const committeeOptions = ['赞同成立业委会', '不赞同成立业委会', '无所谓']
+const participateOptions = ['我愿意', '暂时没这个想法']
 const issueOptions = [
   '卫生清洁不到位',
   '安保管理松懈',
@@ -503,14 +506,42 @@ export default function Survey() {
         {/* Q7 */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <p className="text-sm font-medium text-gray-800 mb-3">
-            7. 其他意见或建议
+            7. 是否愿意参与组织更换物业？
+          </p>
+          <div className="grid grid-cols-1 gap-2">
+            {participateOptions.map((opt) => (
+              <label
+                key={opt}
+                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  data.q7_participate === opt
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="q7"
+                  className="w-4 h-4 text-blue-600"
+                  checked={data.q7_participate === opt}
+                  onChange={() => updateField('q7_participate', opt)}
+                />
+                <span className="text-sm text-gray-700">{opt}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Q8 */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <p className="text-sm font-medium text-gray-800 mb-3">
+            8. 其他意见或建议
           </p>
           <textarea
             placeholder="请输入您的其他意见或建议..."
             rows={4}
             className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 resize-none"
-            value={data.q7_suggestions}
-            onChange={(e) => updateField('q7_suggestions', e.target.value)}
+            value={data.q8_suggestions}
+            onChange={(e) => updateField('q8_suggestions', e.target.value)}
           />
         </div>
 

@@ -34,9 +34,9 @@ function AccordionItem({ title, icon, children, defaultOpen = false }: Accordion
 const steps = [
   {
     num: '01',
-    title: '成立业主委员会',
+    title: '成立业主委员会或者由居委会组织',
     desc: '由业主大会选举产生，代表全体业主行使权利。需满足：专有部分面积占比2/3以上且人数占比2/3以上的业主参与表决。',
-    tips: ['首次业主大会由街道办事处、乡镇政府组织', '业委会成员一般为5-11人单数', '任期不超过5年'],
+    tips: ['业委会由街道办/乡镇政府组织，业委会成员一般为 5-11 人单数，任期不超过 5 年', '居委会是朗拾花语居委会筹备组'],
   },
   {
     num: '02',
@@ -95,6 +95,10 @@ const faqs = [
     q: '更换物业期间服务会中断吗？',
     a: '法律规定物业服务合同终止后、新物业接管前，原物业应当继续处理物业服务事项，不得中断服务。业主也应按约定支付该期间的物业费。',
   },
+  {
+    q: '我的物业券怎么办？',
+    a: '<b>新物业公司在招标时要提供物业券的解决方案</b>，物业券属合同补充约定，仅约束原物业公司。原物业未履约即退场构成违约，应赔偿剩余物业费；新物业无义务承接。建议：固定物业券及缴费证据，先协商/投诉，无果则起诉原物业追偿。若原物业预收费用已移交新物业，可主张新物业在承接范围内继续抵扣。以上回答参考《民法典》第577条（违约责任），《民法典》第949条（退场交接义务）和最高法《关于审理物业服务纠纷案件适用法律若干问题的解释》第3条',
+  },
 ]
 
 export default function Toolbox() {
@@ -115,6 +119,13 @@ export default function Toolbox() {
       </div>
 
       <div className="px-4 py-5 space-y-4">
+        {/* Important Notice */}
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <p className="text-sm font-bold text-red-600 text-center">
+            成立业委会不是更换物业的必要条件！
+          </p>
+        </div>
+
         {/* Legal Basis */}
         <AccordionItem
           title="法律依据"
@@ -145,7 +156,7 @@ export default function Toolbox() {
 
         {/* Process Steps */}
         <AccordionItem
-          title="更换流程"
+          title="更换流程（仅作参考）"
           icon={<ListOrdered size={16} />}
           defaultOpen={true}
         >
@@ -214,7 +225,7 @@ export default function Toolbox() {
 
         {/* FAQ */}
         <AccordionItem
-          title="常见问题"
+          title="常见问题（例如我的物业券怎么办）"
           icon={<HelpCircle size={16} />}
         >
           <div className="space-y-3">
@@ -226,7 +237,7 @@ export default function Toolbox() {
                 </p>
                 <p className="text-xs text-gray-500 leading-relaxed flex items-start gap-1.5">
                   <span className="text-emerald-500 shrink-0">A:</span>
-                  {faq.a}
+                  <span dangerouslySetInnerHTML={{ __html: faq.a }} />
                 </p>
               </div>
             ))}
