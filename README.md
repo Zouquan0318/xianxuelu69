@@ -1,6 +1,8 @@
-# 万科朗拾花语 · 6-5 地块 物业服务小程序
+# 万科朗拾花语 · 6-5 地块 物业服务问卷应用（H5）
 
-> 面向开发者的项目说明文档。技术栈：React + TypeScript + Vite + Tailwind CSS，支持 Vercel Serverless 部署。
+> 面向开发者的项目说明文档。技术栈：React + TypeScript + Vite + Tailwind CSS，支持 Vercel Serverless 部署，可通过微信内浏览器直接访问。
+>
+> **线上访问**：https://www.xianxuelu69.cn
 
 ---
 
@@ -19,17 +21,21 @@ community-app/
 │   │   ├── Survey.tsx            # 满意度调查问卷（户号选择 + 7题问卷）
 │   │   └── Toolbox.tsx           # 工具箱（法律依据/流程/FAQ）
 │   ├── components/
-│   │   └── TabBar.tsx            # 底部 Tab 导航栏
-│   ├── hooks/                    # 自定义 Hooks
-│   ├── lib/                      # 工具函数
-│   └── types/                    # TypeScript 类型定义
+│   │   ├── ui/                 # shadcn/ui 预置组件（50+）
+│   │   ├── AnnouncementModal.tsx # 首页公告弹窗（「致邻居」）
+│   │   └── TabBar.tsx          # 底部 Tab 导航栏
+│   ├── hooks/                  # 自定义 Hooks
+│   ├── lib/                    # 工具函数
+│   └── types/                  # TypeScript 类型定义
 ├── api/                          # Vercel Serverless Functions
-│   ├── _data.js                  # 共享数据存储（内存 + 白名单加载）
+│   ├── _data.js                  # 共享数据存储（Redis / Vercel KV / 内存回退）
+│   ├── household-data.js         # 户号白名单数据（云端使用）
 │   ├── households.js             # GET /api/households — 户号白名单
 │   ├── survey.js                 # POST /api/survey — 提交问卷
 │   ├── surveys.js                # GET /api/surveys — 所有问卷数据
 │   ├── stats.js                  # GET /api/stats — 统计概览
-│   └── export-csv.js             # GET /api/export-csv — 导出 CSV
+│   ├── export-csv.js             # GET /api/export-csv — 导出 CSV
+│   └── package.json              # Serverless Functions 模块类型声明（CommonJS）
 ├── server/                       # 本地开发后端（Node.js HTTP）
 │   ├── index.cjs                 # 本地服务器（端口 3002）
 │   └── data/
@@ -43,10 +49,14 @@ community-app/
 ├── vite.config.ts                # Vite 构建配置
 ├── tsconfig.json                 # TypeScript 配置
 ├── tailwind.config.js            # Tailwind CSS 配置
+├── components.json               # shadcn/ui 组件配置
+├── eslint.config.js              # ESLint 配置
+├── CHANGELOG.md                  # 更新日志
 ├── 14栋.xlsx                     # 原始户号 Excel（14幢业主）
 ├── parse_households.py           # Excel 解析脚本 → 生成白名单
 ├── test_api.py                   # 后端 API 测试脚本
 ├── 功能介绍.md                   # 面向业主的功能说明文档
+├── 功能介绍.pdf                  # 功能说明 PDF 版
 └── README.md                     # 本文档
 ```
 
@@ -54,16 +64,16 @@ community-app/
 
 ## 🛠 技术栈
 
-| 层级 | 技术 | 说明 |
-|---|---|---|
-| 前端框架 | React 19 + TypeScript | 函数组件 + Hooks |
-| 构建工具 | Vite 7 | 开发服务器 + 生产构建 |
-| 样式 | Tailwind CSS 3.4 | 原子化 CSS |
-| UI 组件 | shadcn/ui | 预置 40+ 组件 |
-| 路由 | React Router 7 | HashRouter（适配静态部署） |
-| 图标 | Lucide React | 轻量级图标库 |
-| 后端（本地）| Node.js HTTP | 零外部依赖 |
-| 后端（云端）| Vercel Serverless Functions | API Routes |
+| 层级         | 技术                        | 说明                       |
+| ------------ | --------------------------- | -------------------------- |
+| 前端框架     | React 19 + TypeScript       | 函数组件 + Hooks           |
+| 构建工具     | Vite 7                      | 开发服务器 + 生产构建      |
+| 样式         | Tailwind CSS 3.4            | 原子化 CSS                 |
+| UI 组件      | shadcn/ui                   | 预置 40+ 组件              |
+| 路由         | React Router 7              | HashRouter（适配静态部署） |
+| 图标         | Lucide React                | 轻量级图标库               |
+| 后端（本地） | Node.js HTTP                | 零外部依赖                 |
+| 后端（云端） | Vercel Serverless Functions | API Routes                 |
 
 ---
 
@@ -103,6 +113,19 @@ npm run dev -- --port 7100
 
 ## 📦 构建与部署
 
+### 部署架构
+
+```
+代码推送 → GitHub 仓库 → Vercel 自动构建部署 → www.xianxuelu69.cn
+                                                  ↕
+                                          Vercel Redis（问卷数据持久化）
+```
+
+- **代码托管**：GitHub 仓库，与本地仓库关联
+- **CI/CD**：Vercel 与 GitHub 仓库关联，推送到主分支后自动触发构建与生产部署，无需手动操作
+- **数据存储**：Vercel Redis（通过 Vercel Dashboard → Storage 创建并绑定项目），问卷提交结果持久化保存
+- **自定义域名**：`www.xianxuelu69.cn`（腾讯云注册），已在 Vercel 项目 Domains 中绑定，通过该域名访问线上应用
+
 ### 构建生产包
 
 ```bash
@@ -111,17 +134,39 @@ npm run build
 
 输出到 `dist/` 目录。
 
-### Vercel 部署
+### 日常发布流程
 
 ```bash
-# 登录（首次需要浏览器认证）
-npx vercel login
+git add <改动文件>
+git commit -m "提交说明"
+git push
+```
 
-# 部署到生产环境
+推送完成后，Vercel 会自动拉取最新代码、执行 `npm run build` 并发布到生产环境，可在 Vercel Dashboard 的 Deployments 中查看构建进度与日志。
+
+### Vercel 手动部署（备用）
+
+> 适用于需要绕过 Git 推送、直接从本地发布构建产物的场景。需先通过 `vercel login` 关联账号。
+
+```bash
+# 1. 构建生产包
+npm run build
+
+# 2. 部署到生产环境
 npx vercel --prod
 ```
 
-**已知问题**：`.vercel.app` 域名在国内访问不稳定，建议绑定自定义域名（阿里云/腾讯云域名 + Vercel Domains 配置）。
+部署前会先读取 `dist/` 目录中的构建产物。
+
+### 环境变量
+
+| 变量        | 说明                                            | 配置位置                          |
+| ----------- | ----------------------------------------------- | --------------------------------- |
+| `REDIS_URL` | Vercel Redis 连接串，绑定数据库后自动注入       | Vercel Dashboard → Storage 绑定后自动生成 |
+
+未配置 `REDIS_URL` 时，云端数据存储会自动降级（详见「数据存储」一节）。
+
+**已知问题**：`.vercel.app` 默认域名在国内访问不稳定，已通过绑定自定义域名 `www.xianxuelu69.cn` 解决。
 
 ---
 
@@ -129,13 +174,14 @@ npx vercel --prod
 
 ### 接口列表
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| `GET` | `/api/households` | 获取户号白名单 |
-| `POST` | `/api/survey` | 提交问卷 |
-| `GET` | `/api/surveys` | 获取所有问卷数据 |
-| `GET` | `/api/stats` | 统计概览 |
-| `GET` | `/api/export-csv` | 导出 CSV（带 BOM，Excel 直接打开）|
+| 方法     | 路径                | 说明                               |
+| -------- | ------------------- | ---------------------------------- |
+| `GET`  | `/api/households` | 获取户号白名单                     |
+| `GET`  | `/api/buildings`  | 楼栋楼层结构（供看板使用）         |
+| `POST` | `/api/survey`     | 提交问卷                           |
+| `GET`  | `/api/surveys`    | 获取所有问卷数据                   |
+| `GET`  | `/api/stats`      | 统计概览                           |
+| `GET`  | `/api/export-csv` | 导出 CSV（带 BOM，Excel 直接打开） |
 
 ### POST /api/survey 校验逻辑
 
@@ -149,12 +195,11 @@ npx vercel --prod
 ### 数据存储
 
 - **本地开发**：`server/data/surveys.json`（JSON 文件持久化）
-- **Vercel 云端**：优先使用 **Vercel Redis** 持久化
-  - 在 Vercel Dashboard → Storage 中创建 **Redis** 数据库并连接到项目
-  - 连接后环境变量 `REDIS_URL` 会自动注入，例如：
-    `redis://default:xxx@xxx.db.redis.io:18582`
-  - 代码已安装 `redis` 依赖，通过原生 Redis 协议连接
-  - 未配置 Redis 时，自动回退到内存数组（冷启动/重新部署后数据会丢失）
+- **Vercel 云端**：生产环境使用 **Vercel Redis** 持久化（已绑定，连接串经 `REDIS_URL` 环境变量自动注入）
+  - 代码层面按 **Redis → Vercel KV → 内存** 的优先级自动选择存储后端：
+    1. **Redis**：存在 `REDIS_URL` 时通过原生 Redis 协议连接（当前生产配置）
+    2. **Vercel KV**（兼容旧项目）：未配置 `REDIS_URL` 时，自动尝试 `@vercel/kv` REST 接口
+    3. **内存回退**：以上均不可用时使用内存数组（冷启动/重新部署后数据会丢失）
 - 💡 建议定期访问 `/api/export-csv` 导出备份
 
 ---
@@ -195,6 +240,7 @@ interface SurveyData {
 ```
 
 后端保存时自动附加：
+
 - `id`：唯一标识
 - `submittedAt`：ISO 8601 时间戳
 
@@ -209,6 +255,7 @@ python test_api.py
 ```
 
 覆盖场景：
+
 1. 查询白名单
 2. 首次提交（成功）
 3. 重复提交（失败，409）
@@ -228,14 +275,14 @@ curl -X POST http://localhost:3002/api/survey \
 
 ## 🔄 后续扩展建议
 
-| 功能 | 方案 | 工作量 |
-|---|---|---|
-| 数据持久化（云端）| Vercel KV / Upstash Redis | 中等 |
-| 数据可视化看板 | 新增 Dashboard 页面 + 图表库 | 中等 |
-| 微信小程序（原生感）| web-view 套壳 / Taro 迁移 | 大 |
-| 微信消息通知 | 小程序订阅消息 / 服务号 | 大 |
-| 多楼栋支持 | 扩展 households.json + 前端选择器 | 小 |
-| 业主身份验证 | 房号+手机号短信验证 | 中等 |
+| 功能                 | 方案                              | 工作量 |
+| -------------------- | --------------------------------- | ------ |
+| 数据持久化（云端）   | Vercel KV / Upstash Redis         | 中等   |
+| 数据可视化看板       | 新增 Dashboard 页面 + 图表库      | 中等   |
+| 微信小程序（原生感） | web-view 套壳 / Taro 迁移         | 大     |
+| 微信消息通知         | 小程序订阅消息 / 服务号           | 大     |
+| 多楼栋支持           | 扩展 households.json + 前端选择器 | 小     |
+| 业主身份验证         | 房号+手机号短信验证               | 中等   |
 
 ---
 

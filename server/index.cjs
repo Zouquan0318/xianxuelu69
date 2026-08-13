@@ -162,6 +162,36 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // GET /api/buildings - 从白名单反推楼栋楼层结构（供看板使用）
+  if (req.method === 'GET' && url.pathname === '/api/buildings') {
+    const buildings = {};
+    for (const id of householdWhitelist) {
+      const parts = id.split('-');
+      if (parts.length !== 3) continue;
+      const bnum = parts[1].replace(/^0+/, '') || '0';
+      const floor = parts[2].slice(0, 2);
+      const unit = parts[2].slice(2);
+      if (!buildings[bnum]) buildings[bnum] = { floors: {}, units: new Set(), total: 0 };
+      buildings[bnum].units.add(unit);
+      buildings[bnum].total += 1;
+      if (!buildings[bnum].floors[floor]) buildings[bnum].floors[floor] = new Set();
+      buildings[bnum].floors[floor].add(unit);
+    }
+    const result = Object.entries(buildings)
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .map(([num, data]) => ({
+        building: num,
+        total: data.total,
+        units: [...data.units].sort(),
+        floors: Object.entries(data.floors)
+          .sort(([a], [b]) => Number(b) - Number(a))
+          .map(([floor, units]) => ({ floor, units: [...units].sort() })),
+      }));
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, buildings: result }));
+    return;
+  }
+
   // POST /api/survey - 提交问卷
   if (req.method === 'POST' && url.pathname === '/api/survey') {
     let body = '';
@@ -236,6 +266,7 @@ server.listen(PORT, () => {
   console.log('');
   console.log('可用接口：');
   console.log(`  GET  http://localhost:${PORT}/api/households  - 获取户号白名单`);
+  console.log(`  GET  http://localhost:${PORT}/api/buildings   - 楼栋楼层结构（看板）`);
   console.log(`  POST http://localhost:${PORT}/api/survey      - 提交问卷`);
   console.log(`  GET  http://localhost:${PORT}/api/surveys     - 查看所有数据`);
   console.log(`  GET  http://localhost:${PORT}/api/stats       - 统计概览`);
