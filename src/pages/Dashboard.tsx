@@ -274,59 +274,61 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 2/3 目标进度条 */}
-      <div className="mb-5 rounded-xl border border-gray-100 bg-white p-5">
-        <div className="mb-4 text-sm font-medium text-gray-900">物业更换投票进度（目标：户数与面积均达到 2/3）</div>
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* 户数进度 */}
-          <div>
-            <div className="mb-2 flex items-center justify-between text-sm">
-              <span className="text-gray-600">户数进度</span>
-              <span className="font-medium text-gray-900">
-                {stats.supportWithinTwoYears} / {HOUSES_THRESHOLD} 户
-              </span>
+      {/* 2/3 目标进度条 - 仅在全部楼栋时显示 */}
+      {selectedBuilding === 'all' && (
+        <div className="mb-5 rounded-xl border border-orange-200 bg-orange-50 p-5">
+          <div className="mb-4 text-sm font-bold text-orange-800">物业更换投票进度（目标：户数与面积均达到 2/3）</div>
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* 户数进度 */}
+            <div>
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="text-gray-600">户数进度</span>
+                <span className="font-medium text-gray-900">
+                  {stats.supportWithinTwoYears} / {HOUSES_THRESHOLD} 户
+                </span>
+              </div>
+              <div className="h-3 w-full overflow-hidden rounded-full bg-gray-100">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${stats.housesProgress >= 100 ? 'bg-green-500' : 'bg-orange-500'}`}
+                  style={{ width: `${stats.housesProgress}%` }}
+                />
+              </div>
+              <div className="mt-2 flex items-center justify-between text-xs">
+                <span className="text-gray-400">当前 {stats.supportWithinTwoYearsPct}%</span>
+                {stats.housesGap > 0 ? (
+                  <span className="font-medium text-orange-600">还差 {stats.housesGap} 户</span>
+                ) : (
+                  <span className="font-medium text-green-600">已达标</span>
+                )}
+              </div>
             </div>
-            <div className="h-3 w-full overflow-hidden rounded-full bg-gray-100">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${stats.housesProgress >= 100 ? 'bg-green-500' : 'bg-red-500'}`}
-                style={{ width: `${stats.housesProgress}%` }}
-              />
-            </div>
-            <div className="mt-2 flex items-center justify-between text-xs">
-              <span className="text-gray-400">当前 {stats.supportWithinTwoYearsPct}%</span>
-              {stats.housesGap > 0 ? (
-                <span className="font-medium text-orange-600">还差 {stats.housesGap} 户</span>
-              ) : (
-                <span className="font-medium text-green-600">已达标</span>
-              )}
-            </div>
-          </div>
 
-          {/* 面积进度 */}
-          <div>
-            <div className="mb-2 flex items-center justify-between text-sm">
-              <span className="text-gray-600">面积进度</span>
-              <span className="font-medium text-gray-900">
-                {stats.supportArea.toFixed(0)} / {AREA_THRESHOLD.toFixed(0)} ㎡
-              </span>
-            </div>
-            <div className="h-3 w-full overflow-hidden rounded-full bg-gray-100">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${stats.areaProgress >= 100 ? 'bg-green-500' : 'bg-red-500'}`}
-                style={{ width: `${stats.areaProgress}%` }}
-              />
-            </div>
-            <div className="mt-2 flex items-center justify-between text-xs">
-              <span className="text-gray-400">当前 {stats.supportAreaPct}%</span>
-              {stats.areaGap > 0 ? (
-                <span className="font-medium text-orange-600">还差 {stats.areaGap.toFixed(0)} ㎡</span>
-              ) : (
-                <span className="font-medium text-green-600">已达标</span>
-              )}
+            {/* 面积进度 */}
+            <div>
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="text-gray-600">面积进度</span>
+                <span className="font-medium text-gray-900">
+                  {stats.supportArea.toFixed(0)} / {AREA_THRESHOLD.toFixed(0)} ㎡
+                </span>
+              </div>
+              <div className="h-3 w-full overflow-hidden rounded-full bg-gray-100">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${stats.areaProgress >= 100 ? 'bg-green-500' : 'bg-orange-500'}`}
+                  style={{ width: `${stats.areaProgress}%` }}
+                />
+              </div>
+              <div className="mt-2 flex items-center justify-between text-xs">
+                <span className="text-gray-400">当前 {stats.supportAreaPct}%</span>
+                {stats.areaGap > 0 ? (
+                  <span className="font-medium text-orange-600">还差 {stats.areaGap.toFixed(0)} ㎡</span>
+                ) : (
+                  <span className="font-medium text-green-600">已达标</span>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* 次要 KPI 卡片 */}
       <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -341,6 +343,14 @@ export default function Dashboard() {
           <div className="text-xs text-gray-400">问卷回收</div>
           <div className="mt-1 text-3xl font-medium tabular-nums text-gray-900">{stats.totalSurveyed}</div>
           <div className="mt-1 text-xs text-gray-500">回收率 {stats.responseRate}%</div>
+        </div>
+        <div className="rounded-xl border border-red-100 bg-red-50 p-4">
+          <div className="text-xs text-gray-400">支持两年内更换</div>
+          <div className="mt-1 text-3xl font-medium tabular-nums text-red-600">
+            {stats.supportWithinTwoYears}
+            <span className="ml-1 text-base">户</span>
+          </div>
+          <div className="mt-1 text-xs text-gray-500">占比 {stats.supportWithinTwoYearsPct}%</div>
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-4">
           <div className="text-xs text-gray-400">赞同成立业委会</div>
