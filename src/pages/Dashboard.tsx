@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
+import areaData from '../data/area-data'
 
 const API_BASE = '/api'
 
@@ -153,7 +154,27 @@ export default function Dashboard() {
     }
 
     const supportNow = supportCount['现在启动更换'] || 0
-    const supportNowPct = totalHouses > 0 ? ((supportNow / totalHouses) * 100).toFixed(1) : '0.0'
+    const supportTwoYears = supportCount['物业服务满两年后更换（2027.12.31）'] || 0
+    const supportWhatever = supportCount['无所谓，随大流'] || 0
+    const supportWithinTwoYears = supportNow + supportTwoYears + supportWhatever
+    const supportWithinTwoYearsPct = totalHouses > 0 ? ((supportWithinTwoYears / totalHouses) * 100).toFixed(1) : '0.0'
+
+    // 计算面积统计
+    let totalArea = 0
+    let supportArea = 0
+    for (const s of filteredSurveys) {
+      const parts = s.household.split('-')
+      if (parts.length === 3) {
+        const key = `${parts[0]}-${parts[1]}-${parts[2].slice(2)}`
+        const area = areaData[key] || 0
+        totalArea += area
+        if (['现在启动更换', '物业服务满两年后更换（2027.12.31）', '无所谓，随大流'].includes(s.q3_support_change)) {
+          supportArea += area
+        }
+      }
+    }
+    const supportAreaPct = totalArea > 0 ? ((supportArea / totalArea) * 100).toFixed(1) : '0.0'
+
     const committeeWant = committeeCount['赞同成立业委会'] || 0
     const committeePct = totalHouses > 0 ? ((committeeWant / totalHouses) * 100).toFixed(1) : '0.0'
 
@@ -165,7 +186,13 @@ export default function Dashboard() {
       totalSurveyed,
       responseRate,
       supportNow,
-      supportNowPct,
+      supportTwoYears,
+      supportWhatever,
+      supportWithinTwoYears,
+      supportWithinTwoYearsPct,
+      totalArea,
+      supportArea,
+      supportAreaPct,
       committeeWant,
       committeePct,
       supportCount,
@@ -249,12 +276,13 @@ export default function Dashboard() {
           <div className="mt-1 text-xs text-gray-500">回收率 {stats.responseRate}%</div>
         </div>
         <div className="rounded-xl border border-red-100 bg-red-50 p-4">
-          <div className="text-xs text-gray-400">支持"现在启动更换"</div>
+          <div className="text-xs text-gray-400">支持两年内更换</div>
           <div className="mt-1 text-3xl font-medium tabular-nums text-red-600">
-            {stats.supportNow}
+            {stats.supportWithinTwoYears}
             <span className="ml-1 text-base">户</span>
           </div>
-          <div className="mt-1 text-xs text-gray-500">占比 {stats.supportNowPct}%</div>
+          <div className="mt-1 text-xs text-gray-500">占比 {stats.supportWithinTwoYearsPct}%</div>
+          <div className="mt-1 text-xs text-gray-400">面积占比 {stats.supportAreaPct}%</div>
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-4">
           <div className="text-xs text-gray-400">赞同成立业委会</div>
@@ -414,7 +442,7 @@ function BuildingMap({
     let count = 0
     for (const us of f.unitSuffixes) {
       for (const suffix of us.suffixes) {
-        const id = `${building.building.padStart(2, '0')}-${us.unit.padStart(2, '0')}-${f.floor.padStart(2, '0')}${suffix.padStart(2, '0')}`
+        const id = `${building.building.padStart(2, '0')}-${us.unit}-${f.floor.padStart(2, '0')}${suffix.padStart(2, '0')}`
         if (surveyMap.has(id)) count += 1
       }
     }
@@ -437,7 +465,7 @@ function BuildingMap({
             {f.unitSuffixes.map((us) => (
               <div key={us.unit} className="flex gap-0.5">
                 {us.suffixes.map((suffix) => {
-                  const id = `${building.building.padStart(2, '0')}-${us.unit.padStart(2, '0')}-${f.floor.padStart(2, '0')}${suffix.padStart(2, '0')}`
+                  const id = `${building.building.padStart(2, '0')}-${us.unit}-${f.floor.padStart(2, '0')}${suffix.padStart(2, '0')}`
                   const s = surveyMap.get(id)
                   if (!s) {
                     return (
