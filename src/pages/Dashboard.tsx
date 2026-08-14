@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
-import areaData from '../data/area-data'
+import areaData, { calculateTotalArea } from '../data/area-data'
 
 const API_BASE = '/api'
+
+// 2/3 目标常量
+const TOTAL_HOUSES_TARGET = 432
+const TOTAL_AREA_TARGET = calculateTotalArea()
+const HOUSES_THRESHOLD = Math.ceil(TOTAL_HOUSES_TARGET * 2 / 3)
+const AREA_THRESHOLD = TOTAL_AREA_TARGET * 2 / 3
 
 // Q6 旧值 → 新值映射（兼容历史数据）
 const Q6_VALUE_MAP: Record<string, string> = {
@@ -159,21 +165,25 @@ export default function Dashboard() {
     const supportWithinTwoYears = supportNow + supportTwoYears + supportWhatever
     const supportWithinTwoYearsPct = totalHouses > 0 ? ((supportWithinTwoYears / totalHouses) * 100).toFixed(1) : '0.0'
 
-    // 计算面积统计
-    let totalArea = 0
+    // 计算面积统计（基于小区总面积）
     let supportArea = 0
     for (const s of filteredSurveys) {
       const parts = s.household.split('-')
       if (parts.length === 3) {
         const key = `${parts[0]}-${parts[1]}-${parts[2].slice(2)}`
         const area = areaData[key] || 0
-        totalArea += area
         if (['现在启动更换', '物业服务满两年后更换（2027.12.31）', '无所谓，随大流'].includes(s.q3_support_change)) {
           supportArea += area
         }
       }
     }
-    const supportAreaPct = totalArea > 0 ? ((supportArea / totalArea) * 100).toFixed(1) : '0.0'
+    const supportAreaPct = TOTAL_AREA_TARGET > 0 ? ((supportArea / TOTAL_AREA_TARGET) * 100).toFixed(1) : '0.0'
+
+    // 计算 2/3 目标差距
+    const housesGap = Math.max(0, HOUSES_THRESHOLD - supportWithinTwoYears)
+    const areaGap = Math.max(0, AREA_THRESHOLD - supportArea)
+    const housesProgress = Math.min(100, (supportWithinTwoYears / HOUSES_THRESHOLD) * 100)
+    const areaProgress = Math.min(100, (supportArea / AREA_THRESHOLD) * 100)
 
     const committeeWant = committeeCount['赞同成立业委会'] || 0
     const committeePct = totalHouses > 0 ? ((committeeWant / totalHouses) * 100).toFixed(1) : '0.0'
@@ -190,9 +200,12 @@ export default function Dashboard() {
       supportWhatever,
       supportWithinTwoYears,
       supportWithinTwoYearsPct,
-      totalArea,
       supportArea,
       supportAreaPct,
+      housesGap,
+      areaGap,
+      housesProgress,
+      areaProgress,
       committeeWant,
       committeePct,
       supportCount,
@@ -261,7 +274,61 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* KPI 卡片 */}
+      {/* 2/3 目标进度条 */}
+      <div className="mb-5 rounded-xl border border-gray-100 bg-white p-5">
+        <div className="mb-4 text-sm font-medium text-gray-900">物业更换投票进度（目标：户数与面积均达到 2/3）</div>
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* 户数进度 */}
+          <div>
+            <div className="mb-2 flex items-center justify-between text-sm">
+              <span className="text-gray-600">户数进度</span>
+              <span className="font-medium text-gray-900">
+                {stats.supportWithinTwoYears} / {HOUSES_THRESHOLD} 户
+              </span>
+            </div>
+            <div className="h-3 w-full overflow-hidden rounded-full bg-gray-100">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${stats.housesProgress >= 100 ? 'bg-green-500' : 'bg-red-500'}`}
+                style={{ width: `${stats.housesProgress}%` }}
+              />
+            </div>
+            <div className="mt-2 flex items-center justify-between text-xs">
+              <span className="text-gray-400">当前 {stats.supportWithinTwoYearsPct}%</span>
+              {stats.housesGap > 0 ? (
+                <span className="font-medium text-orange-600">还差 {stats.housesGap} 户</span>
+              ) : (
+                <span className="font-medium text-green-600">已达标</span>
+              )}
+            </div>
+          </div>
+
+          {/* 面积进度 */}
+          <div>
+            <div className="mb-2 flex items-center justify-between text-sm">
+              <span className="text-gray-600">面积进度</span>
+              <span className="font-medium text-gray-900">
+                {stats.supportArea.toFixed(0)} / {AREA_THRESHOLD.toFixed(0)} ㎡
+              </span>
+            </div>
+            <div className="h-3 w-full overflow-hidden rounded-full bg-gray-100">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${stats.areaProgress >= 100 ? 'bg-green-500' : 'bg-red-500'}`}
+                style={{ width: `${stats.areaProgress}%` }}
+              />
+            </div>
+            <div className="mt-2 flex items-center justify-between text-xs">
+              <span className="text-gray-400">当前 {stats.supportAreaPct}%</span>
+              {stats.areaGap > 0 ? (
+                <span className="font-medium text-orange-600">还差 {stats.areaGap.toFixed(0)} ㎡</span>
+              ) : (
+                <span className="font-medium text-green-600">已达标</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 次要 KPI 卡片 */}
       <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
         <div className="rounded-xl border border-gray-100 bg-white p-4">
           <div className="text-xs text-gray-400">总户数</div>
@@ -274,15 +341,6 @@ export default function Dashboard() {
           <div className="text-xs text-gray-400">问卷回收</div>
           <div className="mt-1 text-3xl font-medium tabular-nums text-gray-900">{stats.totalSurveyed}</div>
           <div className="mt-1 text-xs text-gray-500">回收率 {stats.responseRate}%</div>
-        </div>
-        <div className="rounded-xl border border-red-100 bg-red-50 p-4">
-          <div className="text-xs text-gray-400">支持两年内更换</div>
-          <div className="mt-1 text-3xl font-medium tabular-nums text-red-600">
-            {stats.supportWithinTwoYears}
-            <span className="ml-1 text-base">户</span>
-          </div>
-          <div className="mt-1 text-xs text-gray-500">占比 {stats.supportWithinTwoYearsPct}%</div>
-          <div className="mt-1 text-xs text-gray-400">面积占比 {stats.supportAreaPct}%</div>
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-4">
           <div className="text-xs text-gray-400">赞同成立业委会</div>

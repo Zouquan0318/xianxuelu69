@@ -25,4 +25,63 @@ const areaData: Record<string, number> = {
   "20-2-02": 86,
 };
 
+// 各楼栋结构：{ 楼栋: { 单元: [房号后缀列表], 楼层数 } }
+const buildingStructure: Record<string, { units: Record<string, string[]>; floors: number }> = {
+  "14": {
+    units: {
+      "26": ["01", "02"],
+      "27": ["01", "02", "03", "04"],
+    },
+    floors: 26,
+  },
+  "15": {
+    units: {
+      "18": ["01", "02"],
+    },
+    floors: 17,
+  },
+  "16": {
+    units: {
+      "16": ["01", "02"],
+      "17": ["01", "02"],
+    },
+    floors: 18,
+  },
+  "17": {
+    units: {
+      "10": ["01", "02"],
+    },
+    floors: 17,
+  },
+  "18": {
+    units: {
+      "11": ["01", "02"],
+      "12": ["01", "02"],
+    },
+    floors: 18,
+  },
+  "20": {
+    units: {
+      "1": ["01", "02"],
+      "2": ["01", "02"],
+    },
+    floors: 17,
+  },
+};
+
+// 计算小区理论总面积
+export function calculateTotalArea(): number {
+  let total = 0;
+  for (const [building, info] of Object.entries(buildingStructure)) {
+    for (const [unit, suffixes] of Object.entries(info.units)) {
+      for (const suffix of suffixes) {
+        const key = `${building}-${unit}-${suffix}`;
+        const area = areaData[key] || 0;
+        total += area * info.floors;
+      }
+    }
+  }
+  return total;
+}
+
 export default areaData;
