@@ -122,7 +122,7 @@ export default function Dashboard() {
   const [selectedBuilding, setSelectedBuilding] = useState<string>('all')
 
   const buildingOptions = useMemo(() => {
-    return buildings.map((b) => b.building).sort((a, b) => Number(a) - Number(b))
+    return buildings.map((b: BuildingInfo) => b.building).sort((a: string, b: string) => Number(a) - Number(b))
   }, [buildings])
 
   const filteredBuildings = useMemo(() => {
@@ -161,9 +161,11 @@ export default function Dashboard() {
 
     const supportNow = supportCount['现在启动更换'] || 0
     const supportTwoYears = supportCount['物业服务满两年后更换（2027.12.31）'] || 0
+    const supportContractEnd = supportCount['物业合同期满后更换（2028.9.30）'] || 0
     const supportWhatever = supportCount['无所谓，随大流'] || 0
-    const supportWithinTwoYears = supportNow + supportTwoYears + supportWhatever
-    const supportWithinTwoYearsPct = totalHouses > 0 ? ((supportWithinTwoYears / totalHouses) * 100).toFixed(1) : '0.0'
+    // 除「不同意更换」外，其余选项均视为支持更换，计入 2/3 目标进度
+    const supportChange = supportNow + supportTwoYears + supportContractEnd + supportWhatever
+    const supportChangePct = totalHouses > 0 ? ((supportChange / totalHouses) * 100).toFixed(1) : '0.0'
 
     // 计算面积统计（基于小区总面积）
     let supportArea = 0
@@ -172,7 +174,7 @@ export default function Dashboard() {
       if (parts.length === 3) {
         const key = `${parts[0]}-${parts[1]}-${parts[2].slice(2)}`
         const area = areaData[key] || 0
-        if (['现在启动更换', '物业服务满两年后更换（2027.12.31）', '无所谓，随大流'].includes(s.q3_support_change)) {
+        if (['现在启动更换', '物业服务满两年后更换（2027.12.31）', '物业合同期满后更换（2028.9.30）', '无所谓，随大流'].includes(s.q3_support_change)) {
           supportArea += area
         }
       }
@@ -180,9 +182,9 @@ export default function Dashboard() {
     const supportAreaPct = TOTAL_AREA_TARGET > 0 ? ((supportArea / TOTAL_AREA_TARGET) * 100).toFixed(1) : '0.0'
 
     // 计算 2/3 目标差距
-    const housesGap = Math.max(0, HOUSES_THRESHOLD - supportWithinTwoYears)
+    const housesGap = Math.max(0, HOUSES_THRESHOLD - supportChange)
     const areaGap = Math.max(0, AREA_THRESHOLD - supportArea)
-    const housesProgress = Math.min(100, (supportWithinTwoYears / HOUSES_THRESHOLD) * 100)
+    const housesProgress = Math.min(100, (supportChange / HOUSES_THRESHOLD) * 100)
     const areaProgress = Math.min(100, (supportArea / AREA_THRESHOLD) * 100)
 
     const committeeWant = committeeCount['赞同成立业委会'] || 0
@@ -197,9 +199,10 @@ export default function Dashboard() {
       responseRate,
       supportNow,
       supportTwoYears,
+      supportContractEnd,
       supportWhatever,
-      supportWithinTwoYears,
-      supportWithinTwoYearsPct,
+      supportChange,
+      supportChangePct,
       supportArea,
       supportAreaPct,
       housesGap,
@@ -284,7 +287,7 @@ export default function Dashboard() {
               <div className="mb-2 flex items-center justify-between text-sm">
                 <span className="text-gray-600">户数进度</span>
                 <span className="font-medium text-gray-900">
-                  {stats.supportWithinTwoYears} / {HOUSES_THRESHOLD} 户
+                  {stats.supportChange} / {HOUSES_THRESHOLD} 户
                 </span>
               </div>
               <div className="h-3 w-full overflow-hidden rounded-full bg-gray-100">
@@ -294,7 +297,7 @@ export default function Dashboard() {
                 />
               </div>
               <div className="mt-2 flex items-center justify-between text-xs">
-                <span className="text-gray-400">当前 {stats.supportWithinTwoYearsPct}%</span>
+                <span className="text-gray-400">当前 {stats.supportChangePct}%</span>
                 {stats.housesGap > 0 ? (
                   <span className="font-medium text-orange-600">还差 {stats.housesGap} 户</span>
                 ) : (
@@ -345,12 +348,12 @@ export default function Dashboard() {
           <div className="mt-1 text-xs text-gray-500">回收率 {stats.responseRate}%</div>
         </div>
         <div className="rounded-xl border border-red-100 bg-red-50 p-4">
-          <div className="text-xs text-gray-400">支持两年内更换</div>
+          <div className="text-xs text-gray-400">支持更换物业</div>
           <div className="mt-1 text-3xl font-medium tabular-nums text-red-600">
-            {stats.supportWithinTwoYears}
+            {stats.supportChange}
             <span className="ml-1 text-base">户</span>
           </div>
-          <div className="mt-1 text-xs text-gray-500">占比 {stats.supportWithinTwoYearsPct}%</div>
+          <div className="mt-1 text-xs text-gray-500">占比 {stats.supportChangePct}%</div>
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-4">
           <div className="text-xs text-gray-400">赞同成立业委会</div>
